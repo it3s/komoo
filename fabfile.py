@@ -1,11 +1,7 @@
 # -*- coding: utf-8 -*-
-import subprocess
-
-
-def _sh(command):
-    subprocess.Popen(command.split())
+from fabric.api import local
 
 
 def tests():
-    _sh('python -m unittest discover . \'*_test.py\'')
+    local("python -m unittest discover . '*_tests.py'")
     # _sh('sensible-browser ./templates/tests.html')
