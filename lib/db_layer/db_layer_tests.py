@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 import unittest
+import pymongo
 
 
 class Counter:
-    # accesory class to use with connexions testing
+    # utility class to use with connexions testing
     num = 0
 
     @classmethod
@@ -16,6 +17,7 @@ class Counter:
 
 
 class CounterTest(unittest.TestCase):
+    # test the utility test class -> TestInception
     def setUp(self):
         self.counter = Counter()
         self.counter.ensure_0()
@@ -95,7 +97,30 @@ class MetaModelTests(unittest.TestCase):
 
 
 class ModelCursorTests(unittest.TestCase):
-    pass
+    def setUp(self):
+        Mock = type('Mock', (), {})
+
+        collection = Mock()
+        collection.database = Mock()
+
+        class ModelMock(object):
+            collection = type('CollectionMock', (), {
+                'database': type('DatabaseMock', (), {
+                    'connection': type('ConnectionMock', (), {
+                        'document_class': '',
+                        'tz_aware': '',
+                    }),
+                }),
+                'uuid_subtype': '',
+            })
+        self.model = ModelMock()
+
+    def test_pymongo_cursor_wrapping(self):
+        from model import ModelCursor
+
+        cursor = ModelCursor(self.model)
+
+        assert isinstance(cursor.mongo_cursor, pymongo.cursor.Cursor)
 
 
 class ModelTests(unittest.TestCase):
