@@ -103,7 +103,7 @@ class ModelCursor(object):
 class Model(object):
     """
     This class should be inherited from all your models.
-    It must have a `collection` class attribute with a string containing
+    It must have a `collection_name` class attribute with a string containing
     the name of the collection.
 
     """
@@ -117,6 +117,7 @@ class Model(object):
         """
         This method connects the model to the database and instantiate the
         `collection` class attribute with a `pymongo.collection.Collection`
+        given the `collection_name`
 
         Parameters:
           :db_conf:  a config class with MONGO_DBNAME or

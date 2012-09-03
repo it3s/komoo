@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
 import unittest
 import pymongo
-
-
-def _get_test_db():
-    # TODO use proper settings for this
-    db_name = 'komoo_test'
-    cx = pymongo.Connection()
-    cx.drop_database(db_name)
-    db = cx[db_name]
-    return db
+import model
+from model import ModelMCS, ModelCursor, Model
+from settings import Testing
 
 
 class Counter:
@@ -56,8 +50,6 @@ class CounterTest(unittest.TestCase):
 class ModelModuleTests(unittest.TestCase):
 
     def test_connect(self):
-        import model
-
         connexions = Counter()
         Counter.ensure_0()
         config = type('ConfigMock', (), {})()
@@ -84,32 +76,25 @@ class ModelModuleTests(unittest.TestCase):
 
 class MetaModelTests(unittest.TestCase):
     def test_model_registration(self):
-        import model
-        from model import ModelMCS
-
-        class Model(object):
+        class NewModel(object):
             __metaclass__ = ModelMCS
 
-        class NewModel(Model):
-            pass
-
-        # only NewModel should be registered
+        # NewModel should be registered
         self.assertEqual(len(model._models_registry), 1)
 
         self.assertEqual(list(model._models_registry)[0], NewModel)
         self.assertEqual(NewModel.__metaclass__, ModelMCS)
 
-        class AnotherModel(Model):
+        class AnotherModel(NewModel):
             pass
 
         self.assertEqual(len(model._models_registry), 2)
 
 
 class ModelCursorTests(unittest.TestCase):
-    db = _get_test_db()
+    db = Testing.get_db()
 
     def setUp(self):
-        from model import ModelCursor
         collection = self.db.cursor_test
 
         class ModelMock:
@@ -129,7 +114,7 @@ class ModelCursorTests(unittest.TestCase):
         self.db.drop_collection('cursor_test')
 
     def test_pymongo_cursor_wrapping(self):
-        assert isinstance(self.cursor.find().mongo_cursor,
+        self.assertIsInstance(self.cursor.find().mongo_cursor,
                     pymongo.cursor.Cursor)
 
     def test_cursor_next_returns_model_instance(self):
@@ -145,7 +130,7 @@ class ModelCursorTests(unittest.TestCase):
         self.model.collection.save(dict2)
 
         for m in self.cursor.find():
-            assert isinstance(m, self.ModelMock)
+            self.assertIsInstance(m, self.ModelMock)
 
     def test_first_return_0_index_value_from_find(self):
         dict1 = {'name': 'model1'}
@@ -153,14 +138,14 @@ class ModelCursorTests(unittest.TestCase):
         self.model.collection.save(dict1)
         self.model.collection.save(dict2)
 
-        assert isinstance(self.cursor.find().first(), self.ModelMock)
+        self.assertIsInstance(self.cursor.find().first(), self.ModelMock)
         self.assertEqual(self.cursor.find().first().obj['name'], dict1['name'])
 
     def test_find(self):
         model_dict = {'name': 'find test'}
         self.model.collection.save(model_dict)
 
-        assert isinstance(
+        self.assertIsInstance(
                 self.cursor.find({'name': 'find test'}).next(),
                 self.model.__class__)
 
@@ -176,24 +161,64 @@ class ModelCursorTests(unittest.TestCase):
                 self.cursor.find({'name': 'find test'}).count(), 1)
 
 
-# class ModelTests(unittest.TestCase):
-#     def test_connect_from_str(self):
-#         # TODO use settings
-#         db_conf = 'db_name'
-#
-#     def test_connect_from_class(self):
-#         class conf(object):
-#             MONGO_DBNAME = 'db_name'
-#
-#         db_conf = conf
-#
-#     def test_connect_from_method(self):
-#         class conf(object):
-#             @classmethod
-#             def get_db(cls):
-#                 return _get_test_db()
-#
-#         db_conf = conf
+class ModelTests(unittest.TestCase):
+    def setUp(self):
+        class MyModel(Model):
+            collection_name = 'model_test'
+
+        self.model = MyModel()
+
+    def test_connect_from_str(self):
+        db_conf = Testing.MONGO_DBNAME
+
+        self.assertIs(self.model.collection, None)
+        self.model.connect(db_conf)
+
+        self.assertEqual(self.model.collection.name, 'model_test')
+        self.assertIsInstance(self.model.collection,
+                pymongo.collection.Collection)
+
+    def test_connect_from_class(self):
+        class conf(object):
+            MONGO_DBNAME = Testing.MONGO_DBNAME
+
+        db_conf = conf
+        self.assertIs(self.model.collection, None)
+        self.model.connect(db_conf)
+
+        self.assertEqual(self.model.collection.name, 'model_test')
+        self.assertIsInstance(self.model.collection,
+                pymongo.collection.Collection)
+
+    def test_connect_from_method(self):
+        class conf(object):
+            @classmethod
+            def get_db(cls):
+                return Testing.get_db()
+
+        db_conf = conf
+        self.assertIs(self.model.collection, None)
+        self.model.connect(db_conf)
+
+        self.assertEqual(self.model.collection.name, 'model_test')
+        self.assertIsInstance(self.model.collection,
+                pymongo.collection.Collection)
+
+    def test_raises_error_when_model_has_no_collection_name(self):
+        db_conf = Testing.MONGO_DBNAME
+
+        class WrongModel(Model):
+            collection_name = ''
+        self.model = WrongModel()
+
+        with self.assertRaises(Exception):
+            self.model.connect(db_conf)
+
+    def test_raises_error_when_config_is_not_valid(self):
+        db_conf = 986590
+
+        with self.assertRaises(Exception):
+            self.model.connect(db_conf)
 
 
 if __name__ == '__main__':
