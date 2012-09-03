@@ -156,6 +156,26 @@ class ModelCursorTests(unittest.TestCase):
         assert isinstance(self.cursor.find().first(), self.ModelMock)
         self.assertEqual(self.cursor.find().first().obj['name'], dict1['name'])
 
+    def test_find(self):
+        model_dict = {'name': 'find test'}
+        self.model.collection.save(model_dict)
+
+        assert isinstance(
+                self.cursor.find({'name': 'find test'}).next(),
+                self.model.__class__)
+
+        self.assertEqual(
+                self.cursor.find({'name': 'find test'}).first().obj['name'],
+                model_dict['name'])
+
+    def test_count(self):
+        model_dict = {'name': 'find test'}
+        self.model.collection.save(model_dict)
+
+        self.assertEqual(
+                self.cursor.find({'name': 'find test'}).count(), 1)
+
+
 
 class ModelTests(unittest.TestCase):
     pass

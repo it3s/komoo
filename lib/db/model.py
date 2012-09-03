@@ -54,6 +54,8 @@ class ModelCursor(object):
 
       :first:  used to retrieve the first result from a query result.
 
+      :count:  return the number of result for the query
+
     """
 
     def __init__(self, model, *a, **kw):
@@ -87,4 +89,10 @@ class ModelCursor(object):
         """
         out = self.mongo_cursor[0]
         return self.model(out)
+
+    def count(self):
+        """
+        returns the query results count.
+        """
+        return self.mongo_cursor.count()
 
