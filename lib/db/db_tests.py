@@ -176,9 +176,24 @@ class ModelCursorTests(unittest.TestCase):
                 self.cursor.find({'name': 'find test'}).count(), 1)
 
 
-
-class ModelTests(unittest.TestCase):
-    pass
+# class ModelTests(unittest.TestCase):
+#     def test_connect_from_str(self):
+#         # TODO use settings
+#         db_conf = 'db_name'
+#
+#     def test_connect_from_class(self):
+#         class conf(object):
+#             MONGO_DBNAME = 'db_name'
+#
+#         db_conf = conf
+#
+#     def test_connect_from_method(self):
+#         class conf(object):
+#             @classmethod
+#             def get_db(cls):
+#                 return _get_test_db()
+#
+#         db_conf = conf
 
 
 if __name__ == '__main__':

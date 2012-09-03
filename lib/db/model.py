@@ -12,6 +12,9 @@ simple queries.
 
 """
 import pymongo
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 # internal set for registering subclasses of Model
@@ -25,7 +28,9 @@ def connect(config):
 
 
     Parameters:
-      :config: a config class, or a database_name
+      :config: a config class with MONGO_DBNAME or
+               a config class with `.get_db()` method or
+               a string with database_name
 
     """
     for model in _models_registry:
@@ -91,8 +96,50 @@ class ModelCursor(object):
         return self.model(out)
 
     def count(self):
-        """
-        returns the query results count.
-        """
+        """ returns the query results count. """
         return self.mongo_cursor.count()
+
+
+class Model(object):
+    """
+    This class should be inherited from all your models.
+    It must have a `collection` class attribute with a string containing
+    the name of the collection.
+
+    """
+    __metaclass__ = ModelMCS
+
+    # Required on every subclass
+    collection = None
+
+    @classmethod
+    def connect(cls, db_conf):
+        """
+        This method connects the model to the database and instantiate the
+        `collection` class attribute with a `pymongo.collection.Collection`
+
+        Parameters:
+          :db_conf:  a config class with MONGO_DBNAME or
+                     a config class with `.get_db()` method or
+                    a string with database_name
+        """
+        if not cls.collection_name:
+            raise Exception('You must provide a collection name')
+
+        if isinstance(db_conf, (str, unicode)):
+            logging.debug('setting db from str/unicode')
+            _cx = pymongo.Connection(safe=True, max_pool_size=20)
+            _db = _cx[db_conf]
+            cls.collection = _db[cls.collection_name]
+
+        elif hasattr(db_conf, 'get_db'):
+            logging.debug('Setting db from config.get_db')
+            cls.collection = db_conf.get_db()[cls.collection_name]
+        elif hasattr(db_conf, 'MONGO_DBNAME'):
+            logging.debug('setting db from config.MONGO_DBNAME')
+            _cx = pymongo.Connection(safe=True, max_pool_size=20)
+            _db = _cx[db_conf.MONGO_DBNAME]
+            cls.collection = _db[cls.collection_name]
+        else:
+            raise Exception('Could not set database properly')
 

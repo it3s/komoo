@@ -1,9 +1,8 @@
 #! /usr/bin/env sh
 
-# assuming virtualenvwrapper
-mkvirtualenv maps2_env
-workon maps2_env
-setvirtualenvproject
 pip install -r requirements.txt
-add2virtualenv lib/
+
+sudo apt-get install mongodb nodejs npm -y
+
+sudo npm install -g coffee-script@1.2
 
