@@ -134,6 +134,14 @@ class ModelCursorTests(unittest.TestCase):
         self.assertEqual(self.cursor.next().__class__,
                 self.model.__class__)
 
+    def test_iteration_returns_model_instance(self):
+        #TODO implement me
+        pass
+
+    def test_first_return_0_index_value_from_find(self):
+        #TODO implement me
+        pass
+
 
 class ModelTests(unittest.TestCase):
     pass
