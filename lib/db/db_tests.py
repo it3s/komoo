@@ -3,6 +3,15 @@ import unittest
 import pymongo
 
 
+def _get_test_db():
+    # TODO use proper settings for this
+    db_name = 'komoo_test'
+    cx = pymongo.Connection()
+    cx.drop_database(db_name)
+    db = cx[db_name]
+    return db
+
+
 class Counter:
     # utility class to use with connexions testing
     num = 0
@@ -97,30 +106,33 @@ class MetaModelTests(unittest.TestCase):
 
 
 class ModelCursorTests(unittest.TestCase):
+    db = _get_test_db()
+
     def setUp(self):
-        Mock = type('Mock', (), {})
+        from model import ModelCursor
+        collection = self.db.cursor_test
 
-        collection = Mock()
-        collection.database = Mock()
+        class ModelMock:
+            def __init__(*a, **kw):
+                pass
 
-        class ModelMock(object):
-            collection = type('CollectionMock', (), {
-                'database': type('DatabaseMock', (), {
-                    'connection': type('ConnectionMock', (), {
-                        'document_class': '',
-                        'tz_aware': '',
-                    }),
-                }),
-                'uuid_subtype': '',
-            })
+        ModelMock.collection = collection
         self.model = ModelMock()
 
+        self.cursor = ModelCursor(self.model.__class__)
+
+    def tearDown(self):
+        self.db.drop_collection('cursor_test')
+
     def test_pymongo_cursor_wrapping(self):
-        from model import ModelCursor
+        assert isinstance(self.cursor.mongo_cursor,
+                    pymongo.cursor.Cursor)
 
-        cursor = ModelCursor(self.model)
+    def test_cursor_next_returns_model_instance(self):
+        self.model.collection.save({'name': 'model1'})
 
-        assert isinstance(cursor.mongo_cursor, pymongo.cursor.Cursor)
+        self.assertEqual(self.cursor.next().__class__,
+                self.model.__class__)
 
 
 class ModelTests(unittest.TestCase):
