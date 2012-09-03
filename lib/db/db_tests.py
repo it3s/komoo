@@ -113,9 +113,13 @@ class ModelCursorTests(unittest.TestCase):
         collection = self.db.cursor_test
 
         class ModelMock:
-            def __init__(*a, **kw):
-                pass
+            def __init__(self, *a, **kw):
+                if len(a) > 0 and isinstance(a[0], dict):
+                    self.obj = a[0]
+                else:
+                    self.obj = None
 
+        self.ModelMock = ModelMock
         ModelMock.collection = collection
         self.model = ModelMock()
 
@@ -125,22 +129,32 @@ class ModelCursorTests(unittest.TestCase):
         self.db.drop_collection('cursor_test')
 
     def test_pymongo_cursor_wrapping(self):
-        assert isinstance(self.cursor.mongo_cursor,
+        assert isinstance(self.cursor.find().mongo_cursor,
                     pymongo.cursor.Cursor)
 
     def test_cursor_next_returns_model_instance(self):
         self.model.collection.save({'name': 'model1'})
 
-        self.assertEqual(self.cursor.next().__class__,
+        self.assertEqual(self.cursor.find().next().__class__,
                 self.model.__class__)
 
     def test_iteration_returns_model_instance(self):
-        #TODO implement me
-        pass
+        dict1 = {'name': 'model1'}
+        dict2 = {'name': 'model2'}
+        self.model.collection.save(dict1)
+        self.model.collection.save(dict2)
+
+        for m in self.cursor.find():
+            assert isinstance(m, self.ModelMock)
 
     def test_first_return_0_index_value_from_find(self):
-        #TODO implement me
-        pass
+        dict1 = {'name': 'model1'}
+        dict2 = {'name': 'model2'}
+        self.model.collection.save(dict1)
+        self.model.collection.save(dict2)
+
+        assert isinstance(self.cursor.find().first(), self.ModelMock)
+        self.assertEqual(self.cursor.find().first().obj['name'], dict1['name'])
 
 
 class ModelTests(unittest.TestCase):
