@@ -13,6 +13,11 @@ def coverage():
         'nosetests --with-coverage --cover-html --cover-html-dir=docs/cover/')
 
 
+def develop():
+    """Start watchers"""
+    local('nosy --config=nose_config.cfg')
+
+
 def update_requirements():
     """Updates pip requirements file"""
     local('pip freeze > requirements.txt')

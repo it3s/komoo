@@ -65,7 +65,6 @@ class ModelCursor(object):
 
     def __init__(self, model, *a, **kw):
         self.model = model
-        # self.mongo_cursor = pymongo.cursor.Cursor(model.collection, *a, **kw)
 
     def __iter__(self):
         return self
@@ -109,7 +108,6 @@ class Model(object):
     """
     __metaclass__ = ModelMCS
 
-    # Required on every subclass
     collection = None
 
     @classmethod
@@ -123,6 +121,7 @@ class Model(object):
           :db_conf:  a config class with MONGO_DBNAME or
                      a config class with `.get_db()` method or
                     a string with database_name
+
         """
         if not cls.collection_name:
             raise Exception('You must provide a collection name')
