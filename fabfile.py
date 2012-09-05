@@ -22,10 +22,15 @@ def develop():
     """Start watchers"""
     local('nosy --config=nose_config.cfg &')
     local('python scripts/phantomjs-notifier/phantomjs_watcher.py &')
-    #TODO create task to kill the background watchers
 
 
 def update_requirements():
     """Updates pip requirements file"""
     local('pip freeze > requirements.txt')
 
+
+def kill_background_tasks():
+    for task in ['nosy', 'phantomjs_watcher.py']:
+        local(
+            "ps -eo pid,args | grep %s | grep -v grep | "
+            "cut -c1-6 | xargs kill" % task)
