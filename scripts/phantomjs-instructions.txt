@@ -1,0 +1,5 @@
+go to http://phantomjs.org/download.html
+download your system's version
+if you are on linux remeber to create the symlink.
+and done =D
+
