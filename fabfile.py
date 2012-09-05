@@ -20,7 +20,9 @@ def coverage():
 
 def develop():
     """Start watchers"""
-    local('nosy --config=nose_config.cfg')
+    local('nosy --config=nose_config.cfg &')
+    local('python scripts/phantomjs-notifier/phantomjs_watcher.py &')
+    #TODO create task to kill the background watchers
 
 
 def update_requirements():
