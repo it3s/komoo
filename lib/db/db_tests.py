@@ -161,7 +161,7 @@ class ModelCursorTests(unittest.TestCase):
                 self.cursor.find({'name': 'find test'}).count(), 1)
 
 
-class ModelTests(unittest.TestCase):
+class ModelConnectTests(unittest.TestCase):
     def setUp(self):
         class MyModel(Model):
             collection_name = 'model_test'
@@ -219,6 +219,64 @@ class ModelTests(unittest.TestCase):
 
         with self.assertRaises(Exception):
             self.model.connect(db_conf)
+
+
+class ModelInstanceTests(unittest.TestCase):
+    def setUp(self):
+        class ModelTest(Model):
+            collection_name = 'model_test'
+
+        self.ModelTest = ModelTest
+
+    def test_model_instance_empty_data(self):
+        model = self.ModelTest()
+        self.assertEqual(model._data, {})
+
+    def test_model_instance_dict_data(self):
+        data = {'a': 1, 'b': 'bbbbbb'}
+        model = self.ModelTest(data)
+        self.assertEqual(model._data, data)
+
+    def test_model_instance_kwargs_data(self):
+        data = {'a': 1, 'b': 'bbbbbb'}
+        model = self.ModelTest(a=1, b='bbbbbb')
+        self.assertEqual(model._data, data)
+
+    def test_model_instance_hibrid_data(self):
+        data = {'a': 1, 'b': 'bbbbbb'}
+        model = self.ModelTest({'a': 1}, b='bbbbbb')
+        self.assertEqual(model._data, data)
+
+    def test_model_instace_raises_exception_when_data_on_kwargs(self):
+        # regression test
+        with self.assertRaises(NameError):
+            self.ModelTest(data={'a': 1, 'b': 2})
+
+    def test_model_instance_access_data_from_dot_notation(self):
+        model = self.ModelTest({'a': 1}, b='bbbbbb')
+        self.assertEqual(model.a, 1)
+        self.assertEqual(model.b, 'bbbbbb')
+
+    def test_proxy_setitem_to_data_dict(self):
+        model = self.ModelTest(a=1)
+        model.b = 2
+        model.c = 3
+        self.assertEqual(model._data, {'a': 1, 'b': 2, 'c': 3})
+        model.c = 4
+        self.assertEqual(model._data['c'], 4)
+
+    def test_data_property_getter(self):
+        model = self.ModelTest({'a': 1}, b=2)
+        model.c = 3
+        self.assertEqual(model.data, {'a': 1, 'b': 2, 'c': 3})
+        self.assertIs(model.data, model._data)
+
+    def test_data_property_setter(self):
+        model = self.ModelTest()
+        model.data = {'a': 1, 'b': 2, 'c': 3}
+        self.assertEqual(model.data, {'a': 1, 'b': 2, 'c': 3})
+        model.data.update({'a': 2, 'd': 4})
+        self.assertEqual(model.data, {'a': 2, 'b': 2, 'c': 3, 'd': 4})
 
 
 if __name__ == '__main__':

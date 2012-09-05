@@ -13,6 +13,7 @@ simple queries.
 """
 import pymongo
 import logging
+from copy import deepcopy
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -142,4 +143,60 @@ class Model(object):
             cls.collection = _db[cls.collection_name]
         else:
             raise Exception('Could not set database properly')
+
+    def __init__(self, *args, **kw):
+        """
+        The model constructor accepts data form a dictionary or any number of
+        keyword arguments.
+        It builds an internal data dict `_data` which holds all attributes.
+
+        examples:
+        ```
+            model = MyModel({'a': 1, 'b': 2})
+            model = MyModel(a=1, b=2)
+            model = MyModel({'a': 1}, b=2)
+            # they all build the same data atributes.
+        ```
+        """
+        self._data = {}
+        if len(args) > 0 and isinstance(args[0], dict):
+            for field, value in args[0].iteritems():
+                self._data[field] = value
+                setattr(self, field, value)
+        if kw:
+            for field, value in kw.iteritems():
+                if 'data' in kw.keys():
+                    raise NameError(
+                        'The attribute \'data\' is reserved for this class!')
+                self._data[field] = value
+                setattr(self, field, value)
+
+    def __setattr__(self, name, value):
+        # Override set to send any new values to data dict
+        if not hasattr(self, '_data'):
+            object.__setattr__(self, '_data', {})
+        if name != 'data':
+            self._data[name] = value
+            object.__setattr__(self, name, value)
+        else:
+            self._set_data(value)
+
+    def _get_data(self):
+        # .data getter property. See more on the pydoc below
+        return self._data
+
+    def _set_data(self, new_data):
+        # .data setter property. See more on the pydoc below
+        if isinstance(new_data, dict) and new_data:
+            self._data = deepcopy(new_data)
+            for field, value in self._data.iteritems():
+                object.__setattr__(self, field, value)
+
+    """
+    The data property works like a simple proxy for getter, but on setter it
+    makes a partial update, i.e., it merges the new dict with the old one,
+    the new attributes gets added, the existing ones get updates, any attribute
+    non-presente on the new dict stays untouched.
+    """
+    data = property(_get_data, _set_data)
 
