@@ -200,3 +200,24 @@ class Model(object):
     """
     data = property(_get_data, _set_data)
 
+    def upsert(self):
+        """
+        Method for inserting and updating a documment.
+        If your class don't have an `_id` property it insert a new record on
+        the collection. In the other case, where you have an _id property it
+        will make a **partial** update,i.e., intead of replacing the document
+        it will only update the document with the `data` property fields.
+        """
+        if getattr(self, '_id', None):
+            # TODO: use to_dict instead of self.data
+            data_ = deepcopy(self.data)
+            if '_id' in data_:
+                del data_['_id']
+            r = self.collection.update(
+                {'_id': self._id},
+                {'$set': data_},
+                safe=True)
+        else:
+            r = self.collection.save(self.data)
+        return r
+

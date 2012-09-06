@@ -279,6 +279,25 @@ class ModelInstanceTests(unittest.TestCase):
         self.assertEqual(model.data, {'a': 2, 'b': 2, 'c': 3, 'd': 4})
 
 
+class ModelUpdateTests(unittest.TestCase):
+    def setUp(self):
+        class ModelTest(Model):
+            collection_name = 'model_test'
+
+        self.ModelTest = ModelTest
+
+        # empty collection
+        ModelTest.connect(Testing)
+        ModelTest.collection.remove({})
+
+    def test_upsert(self):
+        model = self.ModelTest(a=1, b=2)
+        model.upsert()
+        self.assertEqual(self.ModelTest.collection.find().count(), 1)
+
+        self.assertTrue(self.ModelTest.collection.find({'a': 1, 'b': 2}))
+
+
 if __name__ == '__main__':
     unittest.main()
 
