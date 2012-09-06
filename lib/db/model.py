@@ -203,10 +203,11 @@ class Model(object):
     def upsert(self):
         """
         Method for inserting and updating a documment.
-        If your class don't have an `_id` property it insert a new record on
-        the collection. In the other case, where you have an _id property it
-        will make a **partial** update,i.e., intead of replacing the document
-        it will only update the document with the `data` property fields.
+        If your class don't have an `_id` property it inserts a new record on
+        the collection and automatically set the `_id` attribute on the model.
+        In the other case, where you have an _id property it will make a
+        **partial** update,i.e., intead of replacing the document it will only
+        update the document with the `data` property fields.
         """
         if getattr(self, '_id', None):
             # TODO: use to_dict instead of self.data
@@ -218,6 +219,7 @@ class Model(object):
                 {'$set': data_},
                 safe=True)
         else:
-            r = self.collection.save(self.data)
+            r = self.collection.insert(self.data)
+            self._id = r
         return r
 

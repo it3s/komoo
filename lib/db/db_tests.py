@@ -279,7 +279,7 @@ class ModelInstanceTests(unittest.TestCase):
         self.assertEqual(model.data, {'a': 2, 'b': 2, 'c': 3, 'd': 4})
 
 
-class ModelUpdateTests(unittest.TestCase):
+class ModelUpsertTests(unittest.TestCase):
     def setUp(self):
         class ModelTest(Model):
             collection_name = 'model_test'
@@ -290,12 +290,46 @@ class ModelUpdateTests(unittest.TestCase):
         ModelTest.connect(Testing)
         ModelTest.collection.remove({})
 
-    def test_upsert(self):
+    def test_insert(self):
         model = self.ModelTest(a=1, b=2)
         model.upsert()
         self.assertEqual(self.ModelTest.collection.find().count(), 1)
-
+        self.assertTrue(model._id)
+        self.assertIn('_id', model.data.keys())
         self.assertTrue(self.ModelTest.collection.find({'a': 1, 'b': 2}))
+
+    def test_update(self):
+        model = self.ModelTest(a=1, b=2)
+        model.upsert()
+        retrieved_model = self.ModelTest.collection.find_one({'a': 1})
+        self.assertEqual(retrieved_model['b'], model.b)
+
+        model.b = 4
+        model.upsert()
+        self.assertEqual(self.ModelTest.collection.find({'a': 1}).count(), 1)
+
+        retrieved_model = self.ModelTest.collection.find_one({'a': 1})
+        self.assertEqual(retrieved_model['b'], 4)
+        self.assertEqual(retrieved_model['_id'], model._id)
+
+    def test_partial_update(self):
+        model = self.ModelTest(a=1, b=2, c=3)
+        model.upsert()
+
+        retrieved_doc = self.ModelTest.collection.find_one(
+                {'a': 1, 'b': 2, 'c': 3})
+
+        _id = retrieved_doc['_id']
+
+        model = self.ModelTest({'_id': _id})
+        model.a = 5
+        model.b = 6
+        self.assertNotIn('c', model.data)
+        model.upsert()
+
+        retrieved_doc = self.ModelTest.collection.find_one({'_id': _id})
+        self.assertEqual(retrieved_doc,
+                {'a': 5, 'b': 6, 'c': 3, '_id': _id})
 
 
 if __name__ == '__main__':
