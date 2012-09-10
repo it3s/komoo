@@ -171,10 +171,13 @@ class Model(object):
                 self._data[field] = value
                 setattr(self, field, value)
 
+        object.__setattr__(self, 'cursor', ModelCursor(self.__class__))
+
     def __setattr__(self, name, value):
         # Override set to send any new values to data dict
         if not hasattr(self, '_data'):
             object.__setattr__(self, '_data', {})
+
         if name != 'data':
             self._data[name] = value
             object.__setattr__(self, name, value)
@@ -192,13 +195,12 @@ class Model(object):
             for field, value in self._data.iteritems():
                 object.__setattr__(self, field, value)
 
-    """
-    The data property works like a simple proxy for getter, but on setter it
-    makes a partial update, i.e., it merges the new dict with the old one,
-    the new attributes gets added, the existing ones get updates, any attribute
-    non-presente on the new dict stays untouched.
-    """
-    data = property(_get_data, _set_data)
+    data = property(_get_data, _set_data, doc="""
+        The data property works like a simple proxy for getter, but on setter
+        it makes a partial update, i.e., it merges the new dict with the old
+        one, the new attributes gets added, the existing ones get updates, any
+        attribute non-presente on the new dict stays untouched.
+        """)
 
     def upsert(self):
         """
@@ -222,4 +224,27 @@ class Model(object):
             r = self.collection.insert(self.data)
             self._id = r
         return r
+
+    def remove(self):
+        """
+        Removes the model from the collection. This method is safer than the
+        `collection.remove(model_data)` because on the collecton method,
+        if you pass a empty model_data the mongodb will happily remove all
+        your collection data.
+        This method remove a object given its _id, i.e., raises a ValueError
+        if the model dont has the property `_id`.
+        Return `True` if the object got successfuly removed.
+        """
+        if getattr(self, '_id', None):
+            self.collection.remove({'_id': self._id})
+            return True
+        else:
+            raise ValueError(
+                    'We only can remove a objects which has and _id property')
+
+
+    @classmethod
+    def find(cls, *args, **kwargs):
+        """proxy to `ModelCursor.find`"""
+        return self.cursor.find(*args, **kwargs)
 

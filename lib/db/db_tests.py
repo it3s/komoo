@@ -76,6 +76,9 @@ class ModelModuleTests(unittest.TestCase):
 
 class MetaModelTests(unittest.TestCase):
     def test_model_registration(self):
+        # isolate test
+        model._models_registry = set()
+
         class NewModel(object):
             __metaclass__ = ModelMCS
 
@@ -92,22 +95,22 @@ class MetaModelTests(unittest.TestCase):
 
 
 class ModelCursorTests(unittest.TestCase):
-    db = Testing.get_db()
+
+    class ModelMock:
+        def __init__(self, *a, **kw):
+            if len(a) > 0 and isinstance(a[0], dict):
+                self.obj = a[0]
+            else:
+                self.obj = None
+
+    @classmethod
+    def setUpClass(cls):
+        cls.db = Testing.get_db()
+        collection = cls.db.cursor_test
+        cls.ModelMock.collection = collection
 
     def setUp(self):
-        collection = self.db.cursor_test
-
-        class ModelMock:
-            def __init__(self, *a, **kw):
-                if len(a) > 0 and isinstance(a[0], dict):
-                    self.obj = a[0]
-                else:
-                    self.obj = None
-
-        self.ModelMock = ModelMock
-        ModelMock.collection = collection
-        self.model = ModelMock()
-
+        self.model = self.ModelMock()
         self.cursor = ModelCursor(self.model.__class__)
 
     def tearDown(self):
@@ -162,6 +165,7 @@ class ModelCursorTests(unittest.TestCase):
 
 
 class ModelConnectTests(unittest.TestCase):
+
     def setUp(self):
         class MyModel(Model):
             collection_name = 'model_test'
@@ -221,13 +225,22 @@ class ModelConnectTests(unittest.TestCase):
             self.model.connect(db_conf)
 
 
-class ModelInstanceTests(unittest.TestCase):
-    def setUp(self):
-        class ModelTest(Model):
-            collection_name = 'model_test'
+class ModelTestBase(unittest.TestCase):
+    """This is a base class for the the tests below"""
 
-        self.ModelTest = ModelTest
+    class ModelTest(Model):
+        collection_name = 'model_test'
 
+    @classmethod
+    def setUpClass(cls):
+        cls.ModelTest.connect(Testing)
+        cls.ModelTest.collection.remove({})
+
+    def tearDown(self):
+        self.ModelTest.collection.remove({})
+
+
+class ModelInstanceTests(ModelTestBase):
     def test_model_instance_empty_data(self):
         model = self.ModelTest()
         self.assertEqual(model._data, {})
@@ -279,16 +292,7 @@ class ModelInstanceTests(unittest.TestCase):
         self.assertEqual(model.data, {'a': 2, 'b': 2, 'c': 3, 'd': 4})
 
 
-class ModelUpsertTests(unittest.TestCase):
-    def setUp(self):
-        class ModelTest(Model):
-            collection_name = 'model_test'
-
-        self.ModelTest = ModelTest
-
-        # empty collection
-        ModelTest.connect(Testing)
-        ModelTest.collection.remove({})
+class ModelUpsertTests(ModelTestBase):
 
     def test_insert(self):
         model = self.ModelTest(a=1, b=2)
@@ -330,6 +334,45 @@ class ModelUpsertTests(unittest.TestCase):
         retrieved_doc = self.ModelTest.collection.find_one({'_id': _id})
         self.assertEqual(retrieved_doc,
                 {'a': 5, 'b': 6, 'c': 3, '_id': _id})
+
+
+class ModelRemoveTests(ModelTestBase):
+
+    def test_raises_error_when_no_id(self):
+        d = {'a': 1, 'b': 2}
+        model = self.ModelTest(d)
+
+        self.assertFalse(hasattr(model, '_id'))
+        with self.assertRaises(ValueError):
+            model.remove()
+
+    def test_remove_object(self):
+        model1 = self.ModelTest({'num': 1})
+        model1.upsert()
+
+        model2 = self.ModelTest({'num': 2})
+        model2.upsert()
+
+        self.assertTrue(hasattr(model1, '_id'))
+        self.assertTrue(hasattr(model2, '_id'))
+
+        self.assertEqual(self.ModelTest.collection.find().count(), 2)
+
+        self.assertTrue(model1.remove())
+
+        self.assertEqual(self.ModelTest.collection.find().count(), 1)
+
+
+class ModelFindTests(ModelTestBase):
+
+    def test_set_cursor_on_init(self):
+        model = self.ModelTest()
+        self.assertTrue(hasattr(model, 'cursor'))
+        self.assertIsInstance(model.cursor, ModelCursor)
+
+    def test_find_all(self):
+        # continue from here!
+        assert False
 
 
 if __name__ == '__main__':
