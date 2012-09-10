@@ -225,10 +225,7 @@ class Model(object):
         update the document with the `data` property fields.
         """
         if getattr(self, '_id', None):
-            # TODO: use to_dict instead of self.data
-            data_ = deepcopy(self._data)
-            if '_id' in data_:
-                del data_['_id']
+            data_ = self.to_dict(with_id=False)
             r = self.collection.update(
                 {'_id': self._id},
                 {'$set': data_},
