@@ -260,36 +260,67 @@ class ModelInstanceTests(ModelTestBase):
         model = self.ModelTest({'a': 1}, b='bbbbbb')
         self.assertEqual(model._data, data)
 
-    def test_model_instace_raises_exception_when_data_on_kwargs(self):
-        # regression test
-        with self.assertRaises(NameError):
-            self.ModelTest(data={'a': 1, 'b': 2})
-
     def test_model_instance_access_data_from_dot_notation(self):
         model = self.ModelTest({'a': 1}, b='bbbbbb')
         self.assertEqual(model.a, 1)
         self.assertEqual(model.b, 'bbbbbb')
+        self.assertEqual(model.get('a'), model.a)
+        self.assertEqual(model.get('b'), 'bbbbbb')
+
+    def test_set(self):
+        model = self.ModelTest()
+        with self.assertRaises(ValueError):
+            model.set()
+        model.set({'a': 1})
+
+        model2 = self.ModelTest()
+        model2.set(a=1)
+
+        self.assertEqual(model._data, model2._data)
+
+        model.set({'a': 1, 'b': 2})
+        self.assertEqual(model.get('a'), 1)
+        self.assertEqual(model._data['b'], 2)
+        self.assertEqual(model._data, {'a': 1, 'b': 2})
+
+        model.set(c=3, d=4)
+        self.assertEqual(model.get('c'), 3)
+        self.assertEqual(model.d, 4)
+
+    def test_get(self):
+        model = self.ModelTest()
+        model.set(a=1)
+        self.assertEqual(model.get('a'), 1)
+        self.assertEqual(model.a, 1)
+
+        model._data['a'] = 2
+        self.assertEqual(model.get('a'), 2)
+
+        self.assertIs(model.get('b'), None)
+        with self.assertRaises(AttributeError):
+            model.b
 
     def test_proxy_setitem_to_data_dict(self):
         model = self.ModelTest(a=1)
-        model.b = 2
-        model.c = 3
+        model.set({'b': 2, 'c': 3})
         self.assertEqual(model._data, {'a': 1, 'b': 2, 'c': 3})
-        model.c = 4
+        model.set({'c': 4})
         self.assertEqual(model._data['c'], 4)
+        self.assertEqual(model.c, 4)
 
     def test_data_property_getter(self):
         model = self.ModelTest({'a': 1}, b=2)
-        model.c = 3
-        self.assertEqual(model.data, {'a': 1, 'b': 2, 'c': 3})
-        self.assertIs(model.data, model._data)
+        model.set({'c': 3})
+        self.assertEqual(model._data, {'a': 1, 'b': 2, 'c': 3})
+        self.assertEqual(model.get('a'), 1)
+        self.assertEqual(model.b, 2)
 
     def test_data_property_setter(self):
         model = self.ModelTest()
-        model.data = {'a': 1, 'b': 2, 'c': 3}
-        self.assertEqual(model.data, {'a': 1, 'b': 2, 'c': 3})
-        model.data.update({'a': 2, 'd': 4})
-        self.assertEqual(model.data, {'a': 2, 'b': 2, 'c': 3, 'd': 4})
+        model.set({'a': 1, 'b': 2, 'c': 3})
+        self.assertEqual(model._data, {'a': 1, 'b': 2, 'c': 3})
+        model.set({'a': 2, 'd': 4})
+        self.assertEqual(model._data, {'a': 2, 'b': 2, 'c': 3, 'd': 4})
 
 
 class ModelUpsertTests(ModelTestBase):
@@ -299,7 +330,7 @@ class ModelUpsertTests(ModelTestBase):
         model.upsert()
         self.assertEqual(self.ModelTest.collection.find().count(), 1)
         self.assertTrue(model._id)
-        self.assertIn('_id', model.data.keys())
+        self.assertIn('_id', model._data.keys())
         self.assertTrue(self.ModelTest.collection.find({'a': 1, 'b': 2}))
 
     def test_update(self):
@@ -308,7 +339,7 @@ class ModelUpsertTests(ModelTestBase):
         retrieved_model = self.ModelTest.collection.find_one({'a': 1})
         self.assertEqual(retrieved_model['b'], model.b)
 
-        model.b = 4
+        model.set(b=4)
         model.upsert()
         self.assertEqual(self.ModelTest.collection.find({'a': 1}).count(), 1)
 
@@ -326,9 +357,9 @@ class ModelUpsertTests(ModelTestBase):
         _id = retrieved_doc['_id']
 
         model = self.ModelTest({'_id': _id})
-        model.a = 5
-        model.b = 6
-        self.assertNotIn('c', model.data)
+        model.set(a=5)
+        model.set(b=6)
+        self.assertNotIn('c', model._data)
         model.upsert()
 
         retrieved_doc = self.ModelTest.collection.find_one({'_id': _id})
@@ -341,7 +372,6 @@ class ModelRemoveTests(ModelTestBase):
     def test_raises_error_when_no_id(self):
         d = {'a': 1, 'b': 2}
         model = self.ModelTest(d)
-
         self.assertFalse(hasattr(model, '_id'))
         with self.assertRaises(ValueError):
             model.remove()
@@ -364,15 +394,136 @@ class ModelRemoveTests(ModelTestBase):
 
 
 class ModelFindTests(ModelTestBase):
-
-    def test_set_cursor_on_init(self):
-        model = self.ModelTest()
-        self.assertTrue(hasattr(model, 'cursor'))
-        self.assertIsInstance(model.cursor, ModelCursor)
+    def setUp(self):
+        super(ModelFindTests, self).setUp()
+        model1 = self.ModelTest({'num': 1})
+        model1.upsert()
+        model2 = self.ModelTest({'num': 2})
+        model2.upsert()
+        model3 = self.ModelTest({'num': 3})
+        model3.upsert()
 
     def test_find_all(self):
-        # continue from here!
-        assert False
+        self.assertEqual(self.ModelTest.find().count(), 3)
+
+        for m in self.ModelTest.find():
+            self.assertIsInstance(m, self.ModelTest)
+
+    def test_find_query(self):
+        query = self.ModelTest.find({
+            'num': {
+                '$lt': 3
+            }
+        })
+        self.assertEqual(query.count(), 2)
+
+        for model in query:
+            self.assertIsInstance(model, self.ModelTest)
+            self.assertIn(model.num, [1, 2])
+
+
+class ModelToDictTests(unittest.TestCase):
+    def test_no_structure(self):
+        class NoStructModel(Model):
+            collection_name = 'model_test'
+
+        NoStructModel.connect(Testing)
+        NoStructModel.collection.remove({})
+
+        model = NoStructModel(a=1, b=2, c=3)
+        self.assertEqual(model.to_dict(), {'a': 1, 'b': 2, 'c': 3})
+
+    def test_strucutured_model(self):
+        class Person(Model):
+            collection_name = 'person_test'
+            structure = {
+                'name': unicode,
+                'desc': 'dynamic',
+                'age': int,
+            }
+
+        model = Person(name='John Doe', age=35, desc='no one', bla='ble')
+        self.assertNotIn('bla', model.to_dict().keys())
+        self.assertEqual(model.to_dict(), dict(
+            name=u'John Doe',
+            age=35,
+            desc='no one'
+        ))
+        self.assertNotEqual(model.to_dict(), model._data)
+        self.assertIn('bla', model._data)
+
+    def test_id_on_inserted_model(self):
+        class Person(Model):
+            collection_name = 'person_test'
+            structure = {
+                'name': unicode,
+                'desc': 'dynamic',
+                'age': int,
+            }
+        Person.connect(Testing)
+        Person.collection.remove({})
+
+        model = Person(name='John Doe', age=35, desc='no one', bla='ble')
+        _id = model.upsert()
+        self.assertTrue(model.get('_id'))
+        self.assertEqual(model._id, _id)
+
+        self.assertIn('_id', model.to_dict())
+        self.assertEqual(model.to_dict(), dict(
+            name=u'John Doe',
+            age=35,
+            desc='no one',
+            _id=_id
+        ))
+
+    def test_to_dict_without_id(self):
+        # with structure
+        class Person(Model):
+            collection_name = 'person_test'
+            structure = {
+                'name': unicode,
+                'desc': 'dynamic',
+                'age': int,
+            }
+        Person.connect(Testing)
+        Person.collection.remove({})
+
+        model = Person(name='John Doe', age=35, desc='no one', bla='ble')
+        model.upsert()
+
+        self.assertIn('_id', model._data)
+        self.assertNotIn('_id', model.to_dict(with_id=False))
+        self.assertIn('_id', model.to_dict())
+
+        # without structure
+        class NoStructPerson(Model):
+            collection_name = 'person_test'
+
+        new_model = NoStructPerson(model.to_dict())
+
+        self.assertIn('_id', new_model._data)
+        self.assertNotIn('_id', new_model.to_dict(with_id=False))
+        self.assertIn('_id', new_model.to_dict())
+
+    def test_validators(self):
+        def older_than_18(age):
+            return age > 18
+
+        class Adult(Model):
+            structure = {
+                'name': unicode,
+                'age': int
+            }
+            validators = {
+                'age': [older_than_18, ]
+            }
+
+        ze = Adult(name=u'Zé', age='38')
+        self.assertTrue(ze.to_dict())
+
+        zezinho = Adult(name='zezinho', age=11)
+        with self.assertRaises(ValueError):
+            zezinho.to_dict()
 
 
 if __name__ == '__main__':

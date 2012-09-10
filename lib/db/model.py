@@ -108,8 +108,79 @@ class Model(object):
 
     """
     __metaclass__ = ModelMCS
-
     collection = None
+
+    def __init__(self, *args, **kw):
+        """
+        The model constructor accepts data form a dictionary or any number of
+        keyword arguments.
+        It builds an internal data dict `_data` which holds all attributes.
+
+        examples:
+        ```
+            model = MyModel({'a': 1, 'b': 2})
+            model = MyModel(a=1, b=2)
+            model = MyModel({'a': 1}, b=2)
+            # they all build the same data atributes.
+        ```
+        """
+        self._data = {}
+        if len(args) > 0 and isinstance(args[0], dict):
+            for field, value in args[0].iteritems():
+                self._data[field] = value
+        if kw:
+            for field, value in kw.iteritems():
+                self._data[field] = value
+
+    def set(self, attrs={}, *a, **kw):
+        """
+        Set one or more data values.
+        We can pass a dict containing the data to be set on the attrs
+        parameter, or we can provide the data via keyword arguments.
+        example:
+            ```
+                model = SomeModel()
+                model.set({'name': 'John Doe'})
+                model.set(name='John Doe')  # has the same effect
+            ```
+
+        parameters:
+            :attrs: a dict containing the data to be set
+            :kwargs: you can any number of keyword arguments
+
+        """
+        if attrs and isinstance(attrs, dict):
+            self._data.update(attrs)
+        elif kw:
+            self._data.update(kw)
+        else:
+            raise ValueError(
+                'You must provide either a attrs dict or keyword arguments')
+
+    def get(self, attr):
+        """
+        Return the corresponding `_data` value
+        On __getattr__ we have  syntatic sugar for acessing these value with
+        dot notaion.
+        example:
+            ```
+                model = SomeModel(name='John Doe')
+
+                model.get('name') == model.name  # both return 'John Doe'
+            ```
+
+        Parameters:
+            :attr: the attribute name
+
+        """
+        return self._data.get(attr, None)
+
+    def __getattr__(self, attr):
+        # syntatic sugar for acessing the _data attribute.
+        # see docs for the .get method
+        if not attr in self._data:
+            raise AttributeError()
+        return self._data.get(attr, None)
 
     @classmethod
     def connect(cls, db_conf):
@@ -144,64 +215,6 @@ class Model(object):
         else:
             raise Exception('Could not set database properly')
 
-    def __init__(self, *args, **kw):
-        """
-        The model constructor accepts data form a dictionary or any number of
-        keyword arguments.
-        It builds an internal data dict `_data` which holds all attributes.
-
-        examples:
-        ```
-            model = MyModel({'a': 1, 'b': 2})
-            model = MyModel(a=1, b=2)
-            model = MyModel({'a': 1}, b=2)
-            # they all build the same data atributes.
-        ```
-        """
-        self._data = {}
-        if len(args) > 0 and isinstance(args[0], dict):
-            for field, value in args[0].iteritems():
-                self._data[field] = value
-                setattr(self, field, value)
-        if kw:
-            for field, value in kw.iteritems():
-                if 'data' in kw.keys():
-                    raise NameError(
-                        'The attribute \'data\' is reserved for this class!')
-                self._data[field] = value
-                setattr(self, field, value)
-
-        object.__setattr__(self, 'cursor', ModelCursor(self.__class__))
-
-    def __setattr__(self, name, value):
-        # Override set to send any new values to data dict
-        if not hasattr(self, '_data'):
-            object.__setattr__(self, '_data', {})
-
-        if name != 'data':
-            self._data[name] = value
-            object.__setattr__(self, name, value)
-        else:
-            self._set_data(value)
-
-    def _get_data(self):
-        # .data getter property. See more on the pydoc below
-        return self._data
-
-    def _set_data(self, new_data):
-        # .data setter property. See more on the pydoc below
-        if isinstance(new_data, dict) and new_data:
-            self._data = deepcopy(new_data)
-            for field, value in self._data.iteritems():
-                object.__setattr__(self, field, value)
-
-    data = property(_get_data, _set_data, doc="""
-        The data property works like a simple proxy for getter, but on setter
-        it makes a partial update, i.e., it merges the new dict with the old
-        one, the new attributes gets added, the existing ones get updates, any
-        attribute non-presente on the new dict stays untouched.
-        """)
-
     def upsert(self):
         """
         Method for inserting and updating a documment.
@@ -213,7 +226,7 @@ class Model(object):
         """
         if getattr(self, '_id', None):
             # TODO: use to_dict instead of self.data
-            data_ = deepcopy(self.data)
+            data_ = deepcopy(self._data)
             if '_id' in data_:
                 del data_['_id']
             r = self.collection.update(
@@ -221,7 +234,7 @@ class Model(object):
                 {'$set': data_},
                 safe=True)
         else:
-            r = self.collection.insert(self.data)
+            r = self.collection.insert(self._data)
             self._id = r
         return r
 
@@ -242,9 +255,95 @@ class Model(object):
             raise ValueError(
                     'We only can remove a objects which has and _id property')
 
-
     @classmethod
     def find(cls, *args, **kwargs):
         """proxy to `ModelCursor.find`"""
-        return self.cursor.find(*args, **kwargs)
+        cursor = ModelCursor(cls)
+        return cursor.find(*args, **kwargs)
+
+    def to_dict(self, with_id=True):
+        """
+        Returns a dict with the model data. Differently form the `.data` attr,
+        this method coerces the data to a expected structure (from the
+        `structure` class attribute) and validates it given a `validators`
+        class atrribute.
+
+        Parameters:
+            :with_id: (default=True)
+                Determines if the output dict will have the _id attribute
+
+        example:
+            ```
+            Given the code below
+
+                def older_than_18(val):
+                    return val > 18
+
+                class Adult(Model):
+                    structure = {
+                        'name': unicode
+                        'age': int
+                        'desc': unicode
+                    }
+
+                    validators = {
+                        'age': [older_than_18, ]
+                    }
+
+                adult = Adult({
+                    'name': 'Anderson',
+                    'age': '25',
+                    'desc': 'programmer',
+                    'bla': 'ble'
+                })
+            ```
+            the data attribute would give:
+                {
+                    'name': 'Anderson',
+                    'age': '25',
+                    'desc': 'programmer',
+                    'bla': 'ble'
+                }
+
+            on the other hand, the `to_dict` attribute would give:
+                {
+                    'name': u'Anderson'
+                    'age': 25,
+                    'desc': u'programmer'
+                }
+            If we pass a age lesser than 18, we receive a ValueError
+
+        If we don't have a structure it only returns the raw `_data` dictionary
+
+        If one field strucuture type is 'dynamic', then no coercion will be
+        made on that field.
+
+        """
+        data_dict = {}
+
+        # coercions
+        structure = getattr(self, 'structure', {})
+        if structure:
+            for field, _type in structure.iteritems():
+                val = self._data[field] if _type == 'dynamic' \
+                      else _type(self._data[field])
+                data_dict[field] = val
+        else:
+            data_dict = deepcopy(self._data)
+
+        # validations
+        for field, validations in getattr(self, 'validators', {}).iteritems():
+            for validator in validations:
+                if not validator(data_dict[field]):
+                    raise ValueError(
+                        'Ilegal Value for field {} on validator {}'.format(
+                            field, validator))
+
+        # with or without _id
+        if with_id and not '_id' in data_dict and '_id' in self._data:
+            data_dict['_id'] = self._data['_id']
+        elif not with_id and '_id' in data_dict:
+            del data_dict['_id']
+
+        return data_dict
 
