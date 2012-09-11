@@ -18,10 +18,10 @@ class Komoo(object):
     config object, and call its run method.
 
     example:
-        ```
+
         app = Komoo(my_config_obj)
         app.run()
-        ```
+
     """
 
     # tuples with the blueprint and the url prefix

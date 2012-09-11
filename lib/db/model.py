@@ -3,8 +3,8 @@
 db.model is a thin layer over MongoDB python driver (pymongo).
 Its provides some syntatic-sugar for avoiding common mistakes like typos on
 collection names and so.
-All classes which inherits from `Model` should easily access the underlying
-pymongo's bare Collection. Its does so via the `collection` attribute.
+All classes which inherits from Model should easily access the underlying
+pymongo's bare Collection. Its does so via the collection attribute.
 It also provide some methods to ensure validations, structure
 (not obstrusively, i.e., you can have extra parameters aside from the
 strucuture, this makes sense since we are dealing with a schemaless DB), and
@@ -30,7 +30,7 @@ def connect(config):
 
     Parameters:
       :config: a config class with MONGO_DBNAME or
-               a config class with `.get_db()` method or
+               a config class with .get_db() method or
                a string with database_name
 
     """
@@ -48,7 +48,7 @@ class ModelMCS(type):
 
 class ModelCursor(object):
     """
-    ModelCursor is a simple wrapper over `pymongo.cursor.Cursor`.
+    ModelCursor is a simple wrapper over pymongo.cursor.Cursor.
     Its used internally on Model queries (and should be only used internally).
 
     All it does is, for some special query methods in the model, delegate to
@@ -76,7 +76,7 @@ class ModelCursor(object):
 
     def find(self, *args, **kwargs):
         """
-        Makes a `.find()` on mongoDB with the very same parameters as pymongo
+        Makes a .find() on mongoDB with the very same parameters as pymongo
         Returns itself for chaining with other calls.
 
         For more info on parameters see:
@@ -103,7 +103,7 @@ class ModelCursor(object):
 class Model(object):
     """
     This class should be inherited from all your models.
-    It must have a `collection_name` class attribute with a string containing
+    It must have a collection_name class attribute with a string containing
     the name of the collection.
 
     """
@@ -114,15 +114,15 @@ class Model(object):
         """
         The model constructor accepts data form a dictionary or any number of
         keyword arguments.
-        It builds an internal data dict `_data` which holds all attributes.
+        It builds an internal data dict _data which holds all attributes.
 
         examples:
-        ```
+
             model = MyModel({'a': 1, 'b': 2})
             model = MyModel(a=1, b=2)
             model = MyModel({'a': 1}, b=2)
             # they all build the same data atributes.
-        ```
+
         """
         self._data = {}
         if len(args) > 0 and isinstance(args[0], dict):
@@ -138,11 +138,11 @@ class Model(object):
         We can pass a dict containing the data to be set on the attrs
         parameter, or we can provide the data via keyword arguments.
         example:
-            ```
+
                 model = SomeModel()
                 model.set({'name': 'John Doe'})
                 model.set(name='John Doe')  # has the same effect
-            ```
+
 
         parameters:
             :attrs: a dict containing the data to be set
@@ -159,15 +159,15 @@ class Model(object):
 
     def get(self, attr):
         """
-        Return the corresponding `_data` value
+        Return the corresponding _data value
         On __getattr__ we have  syntatic sugar for acessing these value with
         dot notaion.
         example:
-            ```
+
                 model = SomeModel(name='John Doe')
 
                 model.get('name') == model.name  # both return 'John Doe'
-            ```
+
 
         Parameters:
             :attr: the attribute name
@@ -186,12 +186,12 @@ class Model(object):
     def connect(cls, db_conf):
         """
         This method connects the model to the database and instantiate the
-        `collection` class attribute with a `pymongo.collection.Collection`
-        given the `collection_name`
+        collection class attribute with a pymongo.collection.Collection
+        given the collection_name
 
         Parameters:
           :db_conf:  a config class with MONGO_DBNAME or
-                     a config class with `.get_db()` method or
+                     a config class with .get_db() method or
                     a string with database_name
 
         """
@@ -218,11 +218,11 @@ class Model(object):
     def upsert(self):
         """
         Method for inserting and updating a documment.
-        If your class don't have an `_id` property it inserts a new record on
-        the collection and automatically set the `_id` attribute on the model.
+        If your class don't have an _id property it inserts a new record on
+        the collection and automatically set the _id attribute on the model.
         In the other case, where you have an _id property it will make a
         **partial** update,i.e., intead of replacing the document it will only
-        update the document with the `data` property fields.
+        update the document with the data property fields.
         """
         if getattr(self, '_id', None):
             data_ = self.to_dict(with_id=False)
@@ -238,12 +238,12 @@ class Model(object):
     def remove(self):
         """
         Removes the model from the collection. This method is safer than the
-        `collection.remove(model_data)` because on the collecton method,
+        collection.remove(model_data) because on the collecton method,
         if you pass a empty model_data the mongodb will happily remove all
         your collection data.
         This method remove a object given its _id, i.e., raises a ValueError
-        if the model dont has the property `_id`.
-        Return `True` if the object got successfuly removed.
+        if the model dont has the property _id.
+        Return True if the object got successfuly removed.
         """
         if getattr(self, '_id', None):
             self.collection.remove({'_id': self._id})
@@ -254,15 +254,15 @@ class Model(object):
 
     @classmethod
     def find(cls, *args, **kwargs):
-        """proxy to `ModelCursor.find`"""
+        """proxy to ModelCursor.find"""
         cursor = ModelCursor(cls)
         return cursor.find(*args, **kwargs)
 
     def to_dict(self, with_id=True):
         """
-        Returns a dict with the model data. Differently form the `.data` attr,
+        Returns a dict with the model data. Differently form the .data attr,
         this method coerces the data to a expected structure (from the
-        `structure` class attribute) and validates it given a `validators`
+        structure class attribute) and validates it given a validators
         class atrribute.
 
         Parameters:
@@ -270,7 +270,7 @@ class Model(object):
                 Determines if the output dict will have the _id attribute
 
         example:
-            ```
+
             Given the code below
 
                 def older_than_18(val):
@@ -293,7 +293,7 @@ class Model(object):
                     'desc': 'programmer',
                     'bla': 'ble'
                 })
-            ```
+
             the data attribute would give:
                 {
                     'name': 'Anderson',
@@ -302,7 +302,7 @@ class Model(object):
                     'bla': 'ble'
                 }
 
-            on the other hand, the `to_dict` attribute would give:
+            on the other hand, the to_dict attribute would give:
                 {
                     'name': u'Anderson'
                     'age': 25,
@@ -310,7 +310,7 @@ class Model(object):
                 }
             If we pass a age lesser than 18, we receive a ValueError
 
-        If we don't have a structure it only returns the raw `_data` dictionary
+        If we don't have a structure it only returns the raw _data dictionary
 
         If one field strucuture type is 'dynamic', then no coercion will be
         made on that field.
