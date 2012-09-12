@@ -11,4 +11,5 @@ def index():
 
 @app.route('tests/')
 def tests():
+    """This view loads our javascrit test suite"""
     return render_template('tests.html')

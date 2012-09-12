@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 from __future__ import unicode_literals
 from flask import g, Flask
+
 from settings import config
 from main.views import app as main_bp
 

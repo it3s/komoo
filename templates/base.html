@@ -3,14 +3,24 @@
   <head>
     <meta charset="utf-8">
     <title>{% block title %} MootiroMaps {% endblock %}</title>
-    <script data-main="{{ url_for('static', filename='js/main.js') }}"
-      src="{{ url_for('static', filename='lib/require.js') }}"></script>
+
+    <!-- ================ CSS section ================== -->
+    <link rel="stylesheet"  type="text/css"
+      href="{{ url_for('static',
+               filename='lib/foundation/css/foundation.min.css')}}"/>
+    <link rel="stylesheet"  type="text/css"
+      href="{{ url_for('static', filename='css/app.css') }}"/>
   </head>
   <body>
 
     <div id="content">
       {% block content %}{% endblock %}
     </div>
+
+    <!-- ============ Javascript section =============== -->
+    <script data-main="{{ url_for('static', filename='js/main.js') }}"
+      src="{{ url_for('static', filename='lib/require.js') }}"></script>
+
     {% block js %}{% endblock %}
   </body>
 </html>

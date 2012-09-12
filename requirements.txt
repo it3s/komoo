@@ -5,8 +5,7 @@ PyYAML==3.10
 Werkzeug==0.8.3
 argh==0.15.1
 argparse==1.2.1
-coverage==3.5.2
-nose==1.1.2
+nose==1.2.0
 nosy==1.1.2
 pathtools==0.1.2
 pycrypto==2.6

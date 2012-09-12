@@ -2,4 +2,5 @@
 .*.swp
 cover/
 .coverage
+.sass-cache/
 

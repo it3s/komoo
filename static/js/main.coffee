@@ -14,4 +14,4 @@ requirejs.config
       exports: '_'
 
 define ["jquery", "underscore", "backbone"], ($, _, Backbone) ->
-  console.log 'main module loaded!'
+  console?.log?('main module loaded!')
