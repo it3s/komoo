@@ -29,7 +29,7 @@ def develop():
     # test runners
     local('nosy --config=nose_config.cfg &')
     local('sleep 3')
-    local('python scripts/phantomjs-notifier/phantomjs_watcher.py &')
+    local('python lib/phantomjs-notify/watcher.py &')
 
 
 def update_requirements():
@@ -38,7 +38,7 @@ def update_requirements():
 
 
 def kill_background_tasks():
-    for task in ['nosy', 'phantomjs_watcher.py', 'coffee', 'sass']:
+    for task in ['nosy', 'watcher.py', 'coffee', 'sass']:
         local(
             "ps -eo pid,args | grep %s | grep -v grep | "
             "cut -c1-6 | xargs kill" % task)
