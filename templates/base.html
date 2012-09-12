@@ -1,0 +1,16 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>{% block title %} MootiroMaps {% endblock %}</title>
+    <script data-main="{{ url_for('static', filename='js/main.js') }}"
+      src="{{ url_for('static', filename='lib/require.js') }}"></script>
+  </head>
+  <body>
+
+    <div id="content">
+      {% block content %}{% endblock %}
+    </div>
+    {% block js %}{% endblock %}
+  </body>
+</html>
