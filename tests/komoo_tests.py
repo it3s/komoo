@@ -1,23 +1,15 @@
 import unittest
-from komoo import Komoo
+from komoo import create_app
 from settings import Testing
-import pymongo
 
 
 class KomooInstanceTest(unittest.TestCase):
     def test_instantiate_app(self):
-        komoo = Komoo(Testing)
-        self.assertTrue(komoo)
-        self.assertTrue(hasattr(komoo, 'run'))
+        komoo_app = create_app(Testing)
+        self.assertTrue(komoo_app)
+        self.assertTrue(hasattr(komoo_app, 'run'))
 
-        self.assertEqual(komoo.config, Testing)
-        self.assertTrue(hasattr(komoo, 'blueprints'))
-        self.assertTrue(len(komoo.blueprints) > 0)
-
-        self.assertTrue(komoo.db)
-        self.assertIsInstance(komoo.db.connection, pymongo.Connection)
-
-        app = komoo.app.test_client()
+        app = komoo_app.test_client()
         self.assertTrue(app)
 
 if __name__ == '__main__':
