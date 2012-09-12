@@ -12,4 +12,4 @@ More info about what the project is you can find in http://maps.mootiro.org.
 More info about how the project is build, and how to help, on the wiki.
 
 Travis CI:
-[![Build Status](https://secure.travis-ci.org/it3s/komoo.png?branch=master,develop)](http://travis-ci.org/it3s/komoo)
+[![Build Status](https://secure.travis-ci.org/it3s/komoo.png)](http://travis-ci.org/it3s/komoo)
