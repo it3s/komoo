@@ -13,3 +13,7 @@ branches:
 
 services:
   - mongodb
+
+before_install:
+  - git submodule update --init --recursive
+
