@@ -8,4 +8,9 @@ app = Blueprint('user', 'user')
 def login():
     return render_template('user/login.html')
 
+########## FABEBOOK LOGIN ##########
+@app.route('/login/facebook')
+def login_facebook():
+    return "LALALA"
 
+####################################

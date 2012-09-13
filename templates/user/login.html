@@ -1,1 +1,7 @@
-LOGIN PAGE
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>LOGIN PAGE</h1>
+  <h2 style="color: red">{{error_msg}}</h2>
+  {% include 'user/login_box.html' %}
+{% endblock %}
