@@ -7,11 +7,13 @@ from lib.redis_session import RedisSessionInterface
 
 from settings import config
 from main.views import app as main_bp
+from user.views import app as user_bp
 
 
 # tuples with the blueprint and the url prefix
 blueprints = (
-    (main_bp, '/'),
+    (main_bp, ''),
+    (user_bp, ''),
 )
 
 

@@ -9,7 +9,7 @@ def index():
     return render_template('index.html')
 
 
-@app.route('tests/')
+@app.route('/tests/')
 def tests():
     """This view loads our javascrit test suite"""
     return render_template('tests.html')
