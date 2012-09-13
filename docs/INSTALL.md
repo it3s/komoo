@@ -37,3 +37,6 @@
 - for forms we use the reForm.js framework, which is a submodule inside this
   project so after you clone the repo you must init and update the submodules.
 
+- we use mongodb for persistent data store and redis for transient
+  storage (session, task-queue, etc)
+

@@ -1,7 +1,9 @@
 #! /usr/bin/env python
 # -*- coding:utf-8 -*-
 from __future__ import unicode_literals
-from flask import g, Flask
+from flask import g, Flask, session
+
+from lib.redis_session import RedisSessionInterface
 
 from settings import config
 from main.views import app as main_bp
@@ -33,19 +35,34 @@ def create_app(config):
     app = Flask('komoo')
     app.config.from_object(config)
 
+    app.session_interface = RedisSessionInterface()
+
     db = config.get_db()
 
-    # flush pending mongodb requests
     def call_end_request(response):
+        """
+        flush pending mongodb requests
+        and return the connection to the poll
+        """
         db.connection.end_request()
         return response
 
-    # makes possible to access the db directly from any view
-    # (possible, but **not encouraged**, avoid doing this)
     def add_db_to_request():
+        """
+        makes possible to access the db directly from any view
+        (possible, but **not encouraged**, avoid doing this)
+        """
         g.db = db
 
+    def permanet_sessions():
+        """
+        makes the session persistent for
+        PERMANENT_SESSION_LIFETIME
+        """
+        session.permanent = True
+
     app.before_request(add_db_to_request)
+    app.before_request(permanet_sessions)
     app.after_request(call_end_request)
 
     # register all blueprints

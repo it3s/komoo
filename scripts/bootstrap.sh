@@ -2,7 +2,7 @@
 
 pip install -r requirements.txt
 
-sudo apt-get install mongodb nodejs npm rubygems -y
+sudo apt-get install mongodb nodejs npm rubygems redis-server -y
 
 sudo npm install -g coffee-script@1.2
 

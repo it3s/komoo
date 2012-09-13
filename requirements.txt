@@ -10,6 +10,7 @@ nosy==1.1.2
 pathtools==0.1.2
 pycrypto==2.6
 pymongo==2.3
+redis==2.6.2
 ssh==1.7.14
 watchdog==0.6.0
 wsgiref==0.1.2
