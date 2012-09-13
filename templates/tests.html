@@ -8,23 +8,25 @@
 </head>
 <body>
   <div id="qunit"></div>
+
   <script
     src="{{ url_for('static', filename='lib/qunit/qunit.js') }}">
   </script>
-  <script data-main="{{ url_for('static', filename='js/main.js') }}"
+  <script type="text/javascript">
+    // Waiting the RequireJS to load the tests
+    QUnit.config.autostart = false;
+  </script>
+
+  <script type="text/javascript">
+    // Setting the RequireJS base Url and the tests path
+    var require = {
+      baseUrl: "{{ url_for('static', filename='js') }}",
+      paths: { "tests": "../tests" }
+    };
+  </script>
+  <script data-main="tests/main"
     src="{{ url_for('static', filename='lib/require.js') }}">
   </script>
-  <script type="text/javascript">
 
-    //Main file for loading RequireJS necessary bits
-    QUnit.config.autostart = false;
-
-    require([
-        '/static/tests/sample_test.js'
-      ], function(){
-        QUnit.start(); //Tests loaded, run tests
-      }
-    );
-  </script>
 </body>
 </html>
