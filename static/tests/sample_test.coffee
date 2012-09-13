@@ -1,4 +1,4 @@
-define ['sample'], (sample) ->
+define ['sinon', 'sample'], (sinon, sample) ->
 
   module 'simple examples'
 

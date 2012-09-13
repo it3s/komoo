@@ -1,6 +1,6 @@
 (function() {
 
-  define(['sample'], function(sample) {
+  define(['sinon', 'sample'], function(sinon, sample) {
     module('simple examples');
     test('1 + 1', function() {
       expect(1);
