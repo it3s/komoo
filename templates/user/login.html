@@ -5,3 +5,16 @@
   <h2 style="color: red">{{error_msg}}</h2>
   {% include 'user/login_box.html' %}
 {% endblock %}
+
+{% block js %}
+  <script type="text/javascript" charset="utf-8">
+    KomooNS.social_accounts = {
+      facebook: "{{ url_for('user.login_facebook') }}",
+      google: "{{ url_for('user.login_google') }}",
+      twitter: "/login/twitter/"
+    };
+  </script>
+  <!-- <script type="text/javascript" -->
+  <!--   src="{{ url_for('static', filename='js/user/app.js') }}"> -->
+  <!-- </script> -->
+{% endblock %}

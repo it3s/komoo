@@ -4,7 +4,7 @@ from fabric.api import local
 
 def tests(test_type='both'):
     """Run our tests using nose for python and phantomjs for javascript"""
-    py_test = 'nosetests -v'
+    py_test = 'nosetests -v --nocapture'
     js_test = 'phantomjs static/tests/run-qunit.js templates/tests.html'
     if test_type in ['py', 'both']:
         local(py_test)
@@ -21,8 +21,7 @@ def coverage():
 def develop():
     """Start watchers"""
     # compilers
-    local('coffee -cw static/js/*.coffee &')
-    local('coffee -cw static/tests/*.coffee &')
+    local('coffee-watcher -d static/ -p "" &')
     local('sass --watch static/css/ &')
 
     # test runners
@@ -37,7 +36,7 @@ def update_requirements():
 
 
 def kill_background_tasks():
-    for task in ['nosy', 'watcher.py', 'coffee', 'sass']:
+    for task in ['nosy', 'watcher.py', 'coffee-watcher', 'sass']:
         local(
             "ps -eo pid,args | grep %s | grep -v grep | "
             "cut -c1-6 | xargs kill" % task)

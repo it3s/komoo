@@ -13,14 +13,19 @@
   </head>
   <body>
 
-    <div id="content">
-      {% block content %}{% endblock %}
+    <div class="row">
+      <div id="content" class="nine columns centered">
+        {% block content %}{% endblock %}
+      </div>
     </div>
 
     <!-- ============ Javascript section =============== -->
     <script type="text/javascript">
       // Setting the RequireJS base Url
       var require = { baseUrl: "{{ url_for('static', filename='js') }}" };
+
+      // Setting Komoo objects namespace, for boostraping json from the server
+      window.KomooNS = {};
     </script>
     <script data-main="main"
       src="{{ url_for('static', filename='lib/require.js') }}"></script>
