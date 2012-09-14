@@ -18,10 +18,17 @@
       };
 
       NullTranslations.prototype.install = function(names) {
+        var _this = this;
         if (names == null) names = ['gettext', 'ngettext'];
-        if (__indexOf.call(names, 'gettext') >= 0) window.__ = this.gettext;
+        if (__indexOf.call(names, 'gettext') >= 0) {
+          window.__ = function() {
+            return _this.gettext.apply(_this, arguments);
+          };
+        }
         if (__indexOf.call(names, 'ngettext') >= 0) {
-          return window.n_ = this.ngettext;
+          return window.n_ = function() {
+            return _this.ngettext.apply(_this, arguments);
+          };
         }
       };
 
@@ -59,6 +66,7 @@
       return "" + localeUrl + "/" + language + "/" + domain + ".json";
     };
     getCatalog = function(url, cb) {
+      url = require.toUrl(url);
       return $.ajax({
         url: url
       }).done(function(data) {
@@ -73,16 +81,14 @@
       if (localeUrl == null) localeUrl = 'locale';
       if (language == null) language = module.config().language;
       catalogUrl = find(domain, language, localeUrl);
-      return require(["url!" + catalogUrl], function(catalogUrl) {
-        return getCatalog(catalogUrl, function(catalog) {
-          var t;
-          if (catalog) {
-            t = new Translations(catalog, domain);
-          } else {
-            t = new NullTranslations();
-          }
-          return t.install();
-        });
+      return getCatalog(catalogUrl, function(catalog) {
+        var t;
+        if (catalog) {
+          t = new Translations(catalog, domain);
+        } else {
+          t = new NullTranslations();
+        }
+        return t.install();
       });
     };
     return {

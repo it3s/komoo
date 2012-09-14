@@ -13,6 +13,9 @@
     module('i18n.NullTranslations', {
       setup: function() {
         return t = new I18n.NullTranslations;
+      },
+      teardown: function() {
+        return t = void 0;
       }
     });
     test('gettext', function() {
@@ -48,7 +51,10 @@
       },
       teardown: function() {
         delete window.__;
-        return delete window.n_;
+        delete window.n_;
+        t = void 0;
+        gt = void 0;
+        return gtFake = void 0;
       }
     });
     test('constructor', function() {
@@ -86,19 +92,27 @@
       return equal(ntranslated, NTRANSLATED, 'Should return the ntranslated string');
     });
     test('install', function() {
-      expect(4);
+      var COUNT, gntranslated, gtranslated, ntranslated, translated;
+      expect(6);
       deepEqual(window.__, void 0, 'Should not have __ as global yet');
       deepEqual(window.n_, void 0, 'Should not have n_ as global yet');
       t.install();
-      deepEqual(window.__, t.gettext, 'Should have __ as global');
-      return deepEqual(window.n_, t.ngettext, 'Should have n_ as global');
+      ok(window.__, 'Should have __ as global');
+      ok(window.n_, 'Should have n_ as global');
+      translated = t.gettext(TESTING);
+      gtranslated = __(TESTING);
+      equal(translated, gtranslated, 'Should __ return the correct string');
+      COUNT = 2;
+      ntranslated = t.ngettext(TESTING, NTESTING, COUNT);
+      gntranslated = n_(TESTING, NTESTING, COUNT);
+      return equal(ntranslated, gntranslated, 'Should n_ return the correct string');
     });
     test('install only gettext', function() {
       expect(4);
       deepEqual(window.__, void 0, 'Should not have __ as global yet');
       deepEqual(window.n_, void 0, 'Should not have n_ as global');
       t.install(['gettext']);
-      deepEqual(window.__, t.gettext, 'Should have __ as global');
+      ok(window.__, 'Should have __ as global');
       return deepEqual(window.n_, void 0, 'Should not have n_ as global');
     });
     module('i18n.Translations integration with Gettext');
@@ -138,7 +152,11 @@
         server = sinon.fakeServer.create();
         return window.server = server;
       },
-      tesrdown: function() {}
+      teardown: function() {
+        server.restore();
+        delete window.__;
+        return delete window.n_;
+      }
     });
     test('find', function() {
       var url;
@@ -146,10 +164,10 @@
       url = I18n.find('test', 'pt_BR', 'locale');
       return equal(url, 'locale/pt_BR/test.json');
     });
-    return test('getCatalog success', function() {
+    test('getCatalog success', function() {
       var cb;
       expect(2);
-      server.respondWith(/.*/, [
+      server.respondWith([
         200, {
           'Content-Type': 'application/json'
         }, CATALOG_TEXT
@@ -159,6 +177,46 @@
       server.respond();
       ok(cb.calledOnce);
       return ok(cb.calledWith(CATALOG));
+    });
+    test('getCatalog fail', function() {
+      var cb;
+      expect(2);
+      server.respondWith([400, {}, '']);
+      cb = sinon.spy();
+      I18n.getCatalog('url/to/catalog.json', cb);
+      server.respond();
+      ok(cb.calledOnce);
+      return ok(cb.calledWith(null));
+    });
+    test('install success', function() {
+      var translated;
+      expect(5);
+      server.respondWith([
+        200, {
+          'Content-Type': 'application/json'
+        }, CATALOG_TEXT
+      ]);
+      deepEqual(window.__, void 0, 'Should not have __ as global yet');
+      deepEqual(window.n_, void 0, 'Should not have n_ as global yet');
+      I18n.install(DOMAIN);
+      server.respond();
+      ok(window.__, 'Should have __ as global');
+      ok(window.n_, 'Should have n_ as global');
+      translated = window.__(TESTING);
+      return equal(translated, TRANSLATED, 'Should return the translated string');
+    });
+    return test('install fail', function() {
+      var translated;
+      expect(5);
+      server.respondWith([400, {}, '']);
+      deepEqual(window.__, void 0, 'Should not have __ as global yet');
+      deepEqual(window.n_, void 0, 'Should not have n_ as global yet');
+      I18n.install(DOMAIN);
+      server.respond();
+      ok(window.__, 'Should have __ as global');
+      ok(window.n_, 'Should have n_ as global');
+      translated = __(TESTING);
+      return equal(translated, TESTING, 'Should return the translated string');
     });
   });
 

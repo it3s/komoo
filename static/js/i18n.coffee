@@ -15,10 +15,10 @@ define ['module', 'jquery', 'gettext'], (module, $, Gettext) ->
 
     install: (names=['gettext', 'ngettext']) ->
       if 'gettext' in names
-        window.__ = @gettext
+        window.__ = () => @gettext.apply this, arguments
 
       if 'ngettext' in names
-        window.n_ = @ngettext
+        window.n_ = () => @ngettext.apply this, arguments
 
 
   class Translations extends NullTranslations
@@ -42,6 +42,7 @@ define ['module', 'jquery', 'gettext'], (module, $, Gettext) ->
     "#{localeUrl}/#{language}/#{domain}.json"
 
   getCatalog = (url, cb) ->
+    url = require.toUrl url
     $.ajax(url: url).done((data) ->
       cb data
     ).fail(->
@@ -51,13 +52,12 @@ define ['module', 'jquery', 'gettext'], (module, $, Gettext) ->
   install = (domain='main', language, localeUrl='locale') ->
     language ?= module.config().language
     catalogUrl = find domain, language, localeUrl
-    require ["url!#{catalogUrl}"], (catalogUrl) ->
-      getCatalog catalogUrl, (catalog) ->
-        if catalog
-          t = new Translations catalog, domain
-        else
-          t = new NullTranslations()
-        t.install()
+    getCatalog catalogUrl, (catalog) ->
+      if catalog
+        t = new Translations catalog, domain
+      else
+        t = new NullTranslations()
+      t.install()
 
   return {
     Gettext: Gettext

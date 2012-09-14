@@ -20,6 +20,8 @@ define ['sinon', 'i18n'], (sinon, I18n) ->
   module 'i18n.NullTranslations',
     setup: ->
       t = new I18n.NullTranslations
+    teardown: ->
+      t = undefined
 
   test 'gettext', ->
     expect 1
@@ -55,6 +57,9 @@ define ['sinon', 'i18n'], (sinon, I18n) ->
     teardown: ->
       delete window.__
       delete window.n_
+      t = undefined
+      gt = undefined
+      gtFake = undefined
 
   test 'constructor', ->
     expect 2
@@ -93,14 +98,25 @@ define ['sinon', 'i18n'], (sinon, I18n) ->
     equal ntranslated, NTRANSLATED, 'Should return the ntranslated string'
 
   test 'install', ->
-    expect 4
+    expect 6
     deepEqual window.__, undefined, 'Should not have __ as global yet'
     deepEqual window.n_, undefined, 'Should not have n_ as global yet'
 
     t.install()
 
-    deepEqual window.__, t.gettext, 'Should have __ as global'
-    deepEqual window.n_, t.ngettext, 'Should have n_ as global'
+    ok window.__, 'Should have __ as global'
+    ok window.n_, 'Should have n_ as global'
+
+    translated = t.gettext TESTING
+    gtranslated = __ TESTING
+
+    equal translated, gtranslated, 'Should __ return the correct string'
+
+    COUNT = 2
+    ntranslated = t.ngettext TESTING, NTESTING, COUNT
+    gntranslated = n_ TESTING, NTESTING, COUNT
+
+    equal ntranslated, gntranslated, 'Should n_ return the correct string'
 
   test 'install only gettext', ->
     expect 4
@@ -109,7 +125,7 @@ define ['sinon', 'i18n'], (sinon, I18n) ->
 
     t.install(['gettext'])
 
-    deepEqual window.__, t.gettext, 'Should have __ as global'
+    ok window.__, 'Should have __ as global'
     deepEqual window.n_, undefined, 'Should not have n_ as global'
 
   module 'i18n.Translations integration with Gettext'
@@ -148,8 +164,10 @@ define ['sinon', 'i18n'], (sinon, I18n) ->
     setup: ->
       server = sinon.fakeServer.create()
       window.server = server
-    tesrdown: ->
-        #server.restore()
+    teardown: ->
+      server.restore()
+      delete window.__
+      delete window.n_
 
   test 'find', ->
     expect 1
@@ -158,7 +176,7 @@ define ['sinon', 'i18n'], (sinon, I18n) ->
 
   test 'getCatalog success', ->
     expect 2
-    server.respondWith /.*/, [
+    server.respondWith [
       200
       'Content-Type': 'application/json'
       CATALOG_TEXT
@@ -173,3 +191,53 @@ define ['sinon', 'i18n'], (sinon, I18n) ->
     ok cb.calledOnce
     ok cb.calledWith CATALOG
 
+  test 'getCatalog fail', ->
+    expect 2
+    server.respondWith [400, {}, '']
+
+    cb = sinon.spy()
+
+    I18n.getCatalog 'url/to/catalog.json', cb
+
+    server.respond()
+
+    ok cb.calledOnce
+    ok cb.calledWith null
+
+  test 'install success', ->
+    expect 5
+    server.respondWith [
+      200
+      'Content-Type': 'application/json'
+      CATALOG_TEXT
+    ]
+
+    deepEqual window.__, undefined, 'Should not have __ as global yet'
+    deepEqual window.n_, undefined, 'Should not have n_ as global yet'
+
+    I18n.install(DOMAIN)
+
+    server.respond()
+
+    ok window.__, 'Should have __ as global'
+    ok window.n_, 'Should have n_ as global'
+
+    translated = window.__ TESTING
+    equal translated, TRANSLATED, 'Should return the translated string'
+
+  test 'install fail', ->
+    expect 5
+    server.respondWith [400, {}, '']
+
+    deepEqual window.__, undefined, 'Should not have __ as global yet'
+    deepEqual window.n_, undefined, 'Should not have n_ as global yet'
+
+    I18n.install(DOMAIN)
+
+    server.respond()
+
+    ok window.__, 'Should have __ as global'
+    ok window.n_, 'Should have n_ as global'
+
+    translated = __ TESTING
+    equal translated, TESTING, 'Should return the translated string'
