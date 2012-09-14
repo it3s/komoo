@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <title>Mootiro Maps 2 - Tests</title>
   <link rel="stylesheet"
-    href="{{ url_for('static', filename='lib/qunit/qunit.css') }}">
+    href="../static/lib/qunit/qunit.css">
 </head>
 <body>
   <div id="qunit"></div>
 
   <script
-    src="{{ url_for('static', filename='lib/qunit/qunit.js') }}">
+    src="../static/lib/qunit/qunit.js">
   </script>
   <script type="text/javascript">
     // Waiting the RequireJS to load the tests
@@ -20,12 +20,13 @@
   <script type="text/javascript">
     // Setting the RequireJS base Url and the tests path
     var require = {
-      baseUrl: "{{ url_for('static', filename='js') }}",
+      // baseUrl: "{{ url_for('static', filename='js') }}",
+      baseUrl: "../static/js/",
       paths: { "tests": "../tests" }
     };
   </script>
   <script data-main="tests/main"
-    src="{{ url_for('static', filename='lib/require.js') }}">
+    src="../static/lib/require.js">
   </script>
 
 </body>

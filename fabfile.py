@@ -5,8 +5,7 @@ from fabric.api import local
 def tests(test_type='both'):
     """Run our tests using nose for python and phantomjs for javascript"""
     py_test = 'nosetests -v'
-    js_test = 'phantomjs static/tests/run-qunit.js \
-               http://localhost:5000/tests/'
+    js_test = 'phantomjs static/tests/run-qunit.js templates/tests.html'
     if test_type in ['py', 'both']:
         local(py_test)
     if test_type in ['js', 'both']:
