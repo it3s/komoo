@@ -18,7 +18,11 @@
     </div>
 
     <!-- ============ Javascript section =============== -->
-    <script data-main="{{ url_for('static', filename='js/main.js') }}"
+    <script type="text/javascript">
+      // Setting the RequireJS base Url
+      var require = { baseUrl: "{{ url_for('static', filename='js') }}" };
+    </script>
+    <script data-main="main"
       src="{{ url_for('static', filename='lib/require.js') }}"></script>
 
     {% block js %}{% endblock %}

@@ -1,12 +1,16 @@
 (function() {
 
   define(function() {
-    var adder;
+    var adder, callbacker;
     adder = function(a, b) {
       return a + b;
     };
+    callbacker = function(cb, p) {
+      return cb(p);
+    };
     return {
-      adder: adder
+      adder: adder,
+      callbacker: callbacker
     };
   });
 

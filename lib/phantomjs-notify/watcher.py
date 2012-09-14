@@ -11,8 +11,7 @@ PATTERN = r'\d+ tests of \d+ passed, \d+ failed.'
 
 def run_tests_and_notify():
 
-    cmd = 'phantomjs static/tests/run-qunit.js \
-               http://localhost:5000/tests/'
+    cmd = 'phantomjs static/tests/run-qunit.js templates/tests.html'
 
     out = subprocess.check_output(cmd, shell=True)
     res = re.search(PATTERN, out).group()
