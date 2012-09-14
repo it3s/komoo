@@ -77,5 +77,3 @@ def create_app(config):
 if __name__ == '__main__':
     komoo = create_app(config)
     komoo.run()
-
-

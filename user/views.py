@@ -7,12 +7,35 @@ from flask import request
 from flask import render_template
 from flask import url_for, redirect
 
+from flask.ext.login import LoginManager
+from flask.ext.login import login_required, login_user
+
+from .models import User
+
 app = Blueprint('user', 'user')
 
 
+########## FLASK LOGIN ##########
 @app.route('/login/')
 def login():
     return render_template('user/login.html')
+
+login_manager = LoginManager()
+login_manager.login_view = 'user.login'  # redirect if not logged in
+
+# append Flask-Login functionality to komoo app
+def append_login_manager(state):
+    app = state.app
+    login_manager.setup_app(app)
+app.record(append_login_manager)
+
+@login_manager.user_loader
+def load_user(userid):
+    # user = User.get(userid)
+    user = User()
+    return user
+#################################
+
 
 ########## FABEBOOK LOGIN ##########
 '''INFO: https://developers.facebook.com/docs/authentication/server-side/'''
@@ -58,8 +81,16 @@ def facebook_authorized():
     
     # TODO: create user using name and email
     # TODO: persist access_token and expiration in DB
+
+    user = User()
+    login_user(user)
     
-    return requests.get(href).content
-    return render_template('home.html', email=)
+    return redirect(url_for('user.secret'))
 
 ####################################
+
+
+@app.route('/secret')
+@login_required
+def secret():
+    return render_template('user/secret.html')
