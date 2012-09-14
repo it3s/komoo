@@ -77,6 +77,11 @@ def facebook_authorized():
     if not csrf_token or csrf_token != session['state']:
         abort(403)  # csrf attack! get that bastard!
 
+    error = request.args.get('error', None)
+    if error:
+        error_description = request.args.get('error_description', None)
+        return render_template("user/login.html", error_msg=error_description)
+
     href = Href('https://graph.facebook.com/oauth/access_token')
     params = {
         # client_id: app id from facebook
