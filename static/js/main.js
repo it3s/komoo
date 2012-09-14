@@ -1,8 +1,11 @@
 (function() {
 
   define(['config'], function() {
-    return require(['jquery', 'underscore', 'backbone'], function($, _, Backbone) {
-      return typeof console !== "undefined" && console !== null ? typeof console.log === "function" ? console.log('main module loaded!') : void 0 : void 0;
+    return require(['i18n'], function(I18n) {
+      if (typeof console !== "undefined" && console !== null) {
+        if (typeof console.log === "function") console.log('main module loaded!');
+      }
+      return I18n.install();
     });
   });
 
