@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 import requests
 from werkzeug.urls import Href, url_decode
+from string import letters, digits
+from random import choice
 
 from flask import Blueprint
-from flask import request
+from flask import request, session
 from flask import render_template
 from flask import url_for, redirect
+from flask import abort
 
 from flask.ext.login import LoginManager
 from flask.ext.login import login_required, login_user
@@ -13,6 +16,14 @@ from flask.ext.login import login_required, login_user
 from .models import User
 
 app = Blueprint('user', 'user')
+
+
+def randstr(l=10):
+    chars = letters + digits
+    s = ''
+    for i in range(l):
+        s = s + choice(chars)
+    return s
 
 
 ########## FLASK LOGIN ##########
@@ -45,6 +56,7 @@ FACEBOOK_APP_SECRET = 'd6855cacdb51225519e8aa941cf7cfee'
 @app.route('/login/facebook')
 def login_facebook():
     href = Href('https://www.facebook.com/dialog/oauth')
+    csrf_token = randstr(10)
     params = {
         # client_id: app id from facebook
         # redirect_uri: where the user will be redirected to
@@ -53,14 +65,18 @@ def login_facebook():
         'client_id': FACEBOOK_APP_ID,
         'redirect_uri': url_for('user.facebook_authorized', _external=True),
         'scope': 'email',
-        'state': 'abebubaba',  # TODO: randomize and save state in session
+        'state': csrf_token,
     }
+    session['state'] = csrf_token
     href = href(**params)
     return redirect(href)
 
 @app.route('/login/facebook/authorized')
 def facebook_authorized():
-    # TODO: verifiy request.args.get('state') saved in session
+    csrf_token = request.args.get('state', None)
+    if not csrf_token or csrf_token != session['state']:
+        abort(403)  # csrf attack! get that bastard!
+
     href = Href('https://graph.facebook.com/oauth/access_token')
     params = {
         # client_id: app id from facebook
