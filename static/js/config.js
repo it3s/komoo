@@ -7,6 +7,7 @@
       'jquery': '../lib/jquery-1.8.1.min',
       'underscore': '../lib/underscore',
       'backbone': '../lib/backbone',
+      'gettext': '../lib/Gettext',
       'sinon': '../lib/sinon-1.4.2'
     },
     shim: {
@@ -19,6 +20,9 @@
       },
       'sinon': {
         exports: 'sinon'
+      },
+      'gettext': {
+        exports: 'Gettext'
       }
     }
   });
