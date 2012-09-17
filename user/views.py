@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import requests
+import simplejson
+
 from werkzeug.urls import Href, url_decode
 from string import letters, digits
 from random import choice
@@ -11,7 +13,7 @@ from flask import url_for, redirect
 from flask import abort
 
 from flask.ext.login import LoginManager
-from flask.ext.login import login_required, login_user
+from flask.ext.login import login_required, login_user, current_user
 
 from .models import User
 
@@ -44,6 +46,7 @@ app.record(append_login_manager)
 def load_user(userid):
     # user = User.get(userid)
     user = User()
+    user.email = session.get('email', '')
     return user
 #################################
 
@@ -70,6 +73,7 @@ def login_facebook():
     session['state'] = csrf_token
     href = href(**params)
     return redirect(href)
+
 
 @app.route('/login/facebook/authorized/')
 def facebook_authorized():
@@ -99,13 +103,17 @@ def facebook_authorized():
 
     href = Href('https://graph.facebook.com/')
     href = href('me', fields='email,name', access_token=access_token)
-    
+    resp = requests.get(href)
+    data = simplejson.loads(resp.content)
+
     # TODO: create user using name and email
-    # TODO: persist access_token and expiration in DB
+    # TODO: persist access_token (or auth_code?) and expiration in DB
 
     user = User()
+    # user.email = data['email']
+    session['email'] = data['email']
     login_user(user)
-    
+
     return redirect(url_for('user.secret'))
 
 ####################################
@@ -146,6 +154,7 @@ def login_google():
     href = href(**params)
     return redirect(href)
 
+
 @app.route('/login/google/authorized/')
 def google_authorized():
     csrf_token = request.args.get('state', None)
@@ -157,7 +166,8 @@ def google_authorized():
         error_description = request.args.get('error_description', None)
         return render_template("user/login.html", error_msg=error_description)
 
-    href = 'https://accounts.google.com/o/oauth2/auth'
+    # Step 2: exchange the authorization code for an access_token
+    href = 'https://accounts.google.com/o/oauth2/token'
     params = {
         # client_id: app id from provider.
         # client_secret: app secret from provider.
@@ -170,7 +180,28 @@ def google_authorized():
         'redirect_uri': url_for('user.google_authorized', _external=True),
         'grant_type': 'authorization_code'
     }
-    return requests.post(href, data=params).content  # google requires POST, not GET
+    resp = requests.post(href, data=params)  # google requires POST, not GET
+    data = simplejson.loads(resp.content)
+    access_token = data['access_token']
+
+    # Step 3: get email and user info
+    href = Href('https://www.googleapis.com/oauth2/v1/')
+    href = href('userinfo', access_token=access_token,
+                scope='https://www.googleapis.com/auth/userinfo.email')
+    resp = requests.get(href)
+    data = simplejson.loads(resp.content)
+    
+    # TODO: create user using name and email
+    # TODO: persist access_token (or auth_code?) and expiration in DB
+
+    user = User()
+    # user.email = data['email']
+    session['email'] = data['email']
+    login_user(user)
+    
+    return redirect(url_for('user.secret'))
+
+    
     
 
 
@@ -180,4 +211,4 @@ def google_authorized():
 @app.route('/secret/')
 @login_required
 def secret():
-    return render_template('user/secret.html')
+    return render_template('user/secret.html', email=current_user.email)
